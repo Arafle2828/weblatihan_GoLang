@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -12,8 +14,23 @@ import (
 	"github.com/lib/pq"
 )
 
+// sendErrorResponse sends a consistent JSON error response
+func sendErrorResponse(w http.ResponseWriter, message string, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	response := models.APIResponse{
+		Success: false,
+		Error:   message,
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
 // GetAllDrugs returns all drugs
 func GetAllDrugs(w http.ResponseWriter, r *http.Request) {
+	log.Println("🔍 GetAllDrugs called")
+
 	query := `
 		SELECT d.id, d.name, d.description, d.composition, d.price, d.stock,
 		       d.category_id, c.name as category_name, d.manufacturer, d.dosage,
@@ -24,29 +41,68 @@ func GetAllDrugs(w http.ResponseWriter, r *http.Request) {
 		ORDER BY d.name
 	`
 
+	log.Println("📊 Executing query...")
 	rows, err := database.DB.Query(query)
 	if err != nil {
-		http.Error(w, "Failed to fetch drugs", http.StatusInternalServerError)
+		log.Printf("❌ Query failed: %v", err)
+		sendErrorResponse(w, "Failed to fetch drugs", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
+	log.Println("✅ Query executed successfully")
+
 	var drugs []models.Drug
+	rowCount := 0
 	for rows.Next() {
+		rowCount++
+		log.Printf("📄 Processing row %d", rowCount)
+
 		var drug models.Drug
+		var imageURL sql.NullString
+		var categoryName sql.NullString
+		var description sql.NullString
+		var composition sql.NullString
+		var manufacturer sql.NullString
+		var dosage sql.NullString
+
 		err := rows.Scan(
-			&drug.ID, &drug.Name, &drug.Description, &drug.Composition,
-			&drug.Price, &drug.Stock, &drug.CategoryID, &drug.CategoryName,
-			&drug.Manufacturer, &drug.Dosage, pq.Array(&drug.SideEffects),
-			pq.Array(&drug.Contraindications), &drug.ImageURL,
+			&drug.ID, &drug.Name, &description, &composition,
+			&drug.Price, &drug.Stock, &drug.CategoryID, &categoryName,
+			&manufacturer, &dosage, pq.Array(&drug.SideEffects),
+			pq.Array(&drug.Contraindications), &imageURL,
 			&drug.RequiresPrescription, &drug.CreatedAt, &drug.UpdatedAt,
 		)
 		if err != nil {
-			http.Error(w, "Failed to scan drug", http.StatusInternalServerError)
+			log.Printf("❌ Failed to scan row %d: %v", rowCount, err)
+			sendErrorResponse(w, "Failed to scan drug", http.StatusInternalServerError)
 			return
 		}
+
+		// Convert sql.NullString to string
+		if description.Valid {
+			drug.Description = description.String
+		}
+		if composition.Valid {
+			drug.Composition = composition.String
+		}
+		if categoryName.Valid {
+			drug.CategoryName = categoryName.String
+		}
+		if manufacturer.Valid {
+			drug.Manufacturer = manufacturer.String
+		}
+		if dosage.Valid {
+			drug.Dosage = dosage.String
+		}
+		if imageURL.Valid {
+			drug.ImageURL = imageURL.String
+		}
+
 		drugs = append(drugs, drug)
 	}
+
+	log.Printf("📊 Total rows processed: %d", rowCount)
 
 	response := models.APIResponse{
 		Success: true,
@@ -62,7 +118,7 @@ func GetDrugByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid drug ID", http.StatusBadRequest)
+		sendErrorResponse(w, "Invalid drug ID", http.StatusBadRequest)
 		return
 	}
 
@@ -86,7 +142,7 @@ func GetDrugByID(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		http.Error(w, "Drug not found", http.StatusNotFound)
+		sendErrorResponse(w, "Drug not found", http.StatusNotFound)
 		return
 	}
 
@@ -120,7 +176,7 @@ func SearchDrugs(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := database.DB.Query(query, "%"+searchTerm+"%")
 	if err != nil {
-		http.Error(w, "Failed to search drugs", http.StatusInternalServerError)
+		sendErrorResponse(w, "Failed to search drugs", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -136,7 +192,7 @@ func SearchDrugs(w http.ResponseWriter, r *http.Request) {
 			&drug.RequiresPrescription, &drug.CreatedAt, &drug.UpdatedAt,
 		)
 		if err != nil {
-			http.Error(w, "Failed to scan drug", http.StatusInternalServerError)
+			sendErrorResponse(w, "Failed to scan drug", http.StatusInternalServerError)
 			return
 		}
 		drugs = append(drugs, drug)

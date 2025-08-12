@@ -63,7 +63,7 @@ export default function DrugsPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading drugs...</p>
+          <p className="mt-4 text-gray-800">Loading drugs...</p>
         </div>
       </div>
     )
@@ -91,14 +91,14 @@ export default function DrugsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Katalog Obat</h1>
-          <p className="text-gray-600">Temukan obat yang Anda butuhkan dari koleksi lengkap kami</p>
+          <p className="text-gray-800">Temukan obat yang Anda butuhkan dari koleksi lengkap kami</p>
         </div>
 
         {/* Search and Filter */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 h-5 w-5" />
               <input
                 type="text"
                 placeholder="Cari obat berdasarkan nama atau kandungan..."
@@ -133,14 +133,14 @@ export default function DrugsPage() {
               }`}
             >
               <div className="text-2xl mb-2">{category.icon}</div>
-              <h3 className="font-medium text-sm">{category.name}</h3>
+              <h3 className="font-medium text-sm text-gray-900">{category.name}</h3>
             </button>
           ))}
         </div>
 
         {/* Results Count */}
         <div className="mb-6">
-          <p className="text-gray-600">
+          <p className="text-gray-800">
             Menampilkan {filteredDrugs.length} dari {drugs.length} obat
             {searchQuery && ` untuk "${searchQuery}"`}
             {selectedCategory !== 'all' && ` dalam kategori "${categories.find(c => c.slug === selectedCategory)?.name}"`}
@@ -152,7 +152,7 @@ export default function DrugsPage() {
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Tidak ada obat ditemukan</h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-800 mb-4">
               Coba ubah kata kunci pencarian atau pilih kategori yang berbeda
             </p>
             <button
@@ -175,8 +175,8 @@ export default function DrugsPage() {
                 
                 <div className="p-4">
                   <h3 className="font-semibold text-lg text-gray-900 mb-2">{drug.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{drug.description}</p>
-                  <p className="text-xs text-gray-500 mb-3">{drug.composition}</p>
+                  <p className="text-sm text-gray-800 mb-2">{drug.description}</p>
+                  <p className="text-xs text-gray-700 mb-3">{drug.composition}</p>
                   
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-lg font-bold text-blue-600">Rp {drug.price.toLocaleString('id-ID')}</span>
